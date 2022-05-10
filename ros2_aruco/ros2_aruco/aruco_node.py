@@ -102,9 +102,7 @@ class ArucoNode(rclpy.node.Node):
             depth=1
         )
 
-        
-        
-        self.pose_pub = self.create_publisher(PoseStamped, "/camera/patient_pose", 1)
+        self.pose_pub = self.create_publisher(PoseStamped, "/camera/patient_pose", qos_profile=qos_profile)
         """"""
         # Set up publishers
         self.poses_pub = self.create_publisher(PoseArray, 'aruco_poses', 10)

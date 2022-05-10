@@ -1,92 +1,86 @@
-# ROS2 AruCo
+# ROS2 ArUco
+
+ROS2 Node to detect ArUco markers with given images, based on https://github.com/JMU-ROBOTICS-VIVA/ros2_aruco.
+
+## Interface:
+
+- `aruco_node` (ROS2 Foxy python)
+
+    Node for marker detection
+
+- `aruco_generate_marker.py` (python)
+
+    Python script for generating ArUco marker
 
 
+### PTU Node
+---
 
-## Getting started
+#### Topics
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Subscriptions:
+* `/camera/image_raw` (`sensor_msgs.msg.Image`)
+* `/camera/camera_info` (`sensor_msgs.msg.CameraInfo`)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Published Topics:
+* `/aruco_poses` (`geometry_msgs.msg.PoseArray`) - Poses of all detected markers (suitable for rviz visualization)
+* `/aruco_markers` (`ros2_aruco_interfaces.msg.ArucoMarkers`) - Provides an array of all poses along with the corresponding marker ids
 
-## Add your files
+#### Parameters
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+* `marker_size` - size of the markers in meters (default .0625)
+* `aruco_dictionary_id` - dictionary that was used to generate markers (default `DICT_5X5_250`)
+* `image_topic` - image topic to subscribe to (default `/camera/image_raw`)
+* `camera_info_topic` - Camera info topic to subscribe to (default `/camera/camera_info`)
+* `camera_frame` - Camera optical frame to use (default to the frame id provided by the camera info message.)
+
+## How to run:
+
+### Dependencies
+
+- opencv-contrib-python
+
+- cv_bridge
+
+### Installation
+
+    pip install opencv-contrib-python # or pip3
+
+    sudo apt-get install ros-$ROS_DISTRO-cv-bridge 
+
+Build packages with ros
+
+    colcon build --symlink-install
+
+### Start the nodes
+
+vorläufig
+
+    ros2 run ROS2 AruCo aruco_node
+
+## Generating Marker Images
 
 ```
-cd existing_repo
-git remote add origin https://www.w.hs-karlsruhe.de/gitlab/iras/research-projects/petra/ros2_aruco.git
-git branch -M main
-git push -uf origin main
+ros2 run ros2_aruco aruco_generate_marker
 ```
 
-## Integrate with your tools
+Pass the `-h` flag for usage information: 
 
-- [ ] [Set up project integrations](https://www.w.hs-karlsruhe.de/gitlab/iras/research-projects/petra/ros2_aruco/-/settings/integrations)
+```
+usage: aruco_generate_marker [-h] [--id ID] [--size SIZE] [--dictionary]
 
-## Collaborate with your team
+Generate a .png image of a specified maker.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+optional arguments:
+  -h, --help     show this help message and exit
+  --id ID        Marker id to generate (default: 1)
+  --size SIZE    Side length in pixels (default: 200)
+  --dictionary   Dictionary to use. Valid options include: DICT_4X4_100,
+                 DICT_4X4_1000, DICT_4X4_250, DICT_4X4_50, DICT_5X5_100,
+                 DICT_5X5_1000, DICT_5X5_250, DICT_5X5_50, DICT_6X6_100,
+                 DICT_6X6_1000, DICT_6X6_250, DICT_6X6_50, DICT_7X7_100,
+                 DICT_7X7_1000, DICT_7X7_250, DICT_7X7_50, DICT_ARUCO_ORIGINAL
+                 (default: DICT_5X5_250)
 
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Todo:
+- [ ] 
