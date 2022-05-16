@@ -1,6 +1,10 @@
 # ROS2 ArUco
 
-ROS2 Node to detect ArUco markers with given images, based on https://github.com/JMU-ROBOTICS-VIVA/ros2_aruco.
+ROS2 Wrapper for OpenCV Aruco Marker Tracking
+
+Based on https://github.com/JMU-ROBOTICS-VIVA/ros2_aruco
+
+This node locates Aruco AR markers in images and publishes their ids and poses.
 
 ## Interface:
 
@@ -11,7 +15,6 @@ ROS2 Node to detect ArUco markers with given images, based on https://github.com
 - `aruco_generate_marker.py` (python)
 
     Python script for generating ArUco marker
-
 
 ### PTU Node
 ---
@@ -54,9 +57,13 @@ Build packages with ros
 
 ### Start the nodes
 
-vorläufig
+    ros2 launch ros2_aruco aruco.launch.py
 
-    ros2 run ROS2 AruCo aruco_node
+## TF2
+```
+ros2 run tf2_tools view_frames.py
+ros2 run tf2_ros tf2_echo [reference_frame] [target_frame]
+```
 
 ## Generating Marker Images
 
@@ -81,6 +88,4 @@ optional arguments:
                  DICT_6X6_1000, DICT_6X6_250, DICT_6X6_50, DICT_7X7_100,
                  DICT_7X7_1000, DICT_7X7_250, DICT_7X7_50, DICT_ARUCO_ORIGINAL
                  (default: DICT_5X5_250)
-
-## Todo:
-- [ ] 
+```

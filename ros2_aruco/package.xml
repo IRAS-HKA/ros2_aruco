@@ -7,10 +7,9 @@
   <maintainer email="nathan.r.sprague@gmail.com">Nathan Sprague</maintainer>
   <license>TODO: License declaration</license>
 
-  <depend>rclpy</depend>
-  <depend>cv_bridge</depend>
   <depend>geometry_msgs</depend>
-
+  <depend>rclpy</depend>
+  <depend>tf2_ros</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

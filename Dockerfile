@@ -7,19 +7,31 @@ ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN rosdep update --rosdistro $ROS_DISTRO
 
-# Update packages only if necessary, ~250MB
-# RUN apt update && apt -y dist-upgrade
-
 ##############################################################################
 ##                                 Global Dependecies                       ##
 ##############################################################################
 RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-$ROS_DISTRO-cv-bridge \
     python3-pip \
+    ros-$ROS_DISTRO-ros2bag \
+    ros-$ROS_DISTRO-rosbag2 \
+    ros-$ROS_DISTRO-rosbag2-storage \
+    ros-$ROS_DISTRO-rosbag2-storage-dbgsym \
+    ros-$ROS_DISTRO-rosbag2-storage-default-plugins \
+    ros-$ROS_DISTRO-rosbag2-storage-default-plugins-dbgsym \
+    ros-$ROS_DISTRO-rosbag2-test-common \
+    ros-$ROS_DISTRO-rosbag2-tests \
+    ros-$ROS_DISTRO-rosbag2-converter-default-plugins \
+    ros-$ROS_DISTRO-rosbag2-converter-default-plugins-dbgsym \
+    ros-$ROS_DISTRO-rosbag2-transport \
+    ros-$ROS_DISTRO-rosbag2-transport-dbgsym \
+    ros-$ROS_DISTRO-tf2-tools \
+    ros-$ROS_DISTRO-tf-transformations \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install opencv-contrib-python 
-
+# New versions necessary to prevent "skbuild" error from scikit-build
+RUN python3 -m pip install -U pip setuptools
+RUN pip3 install opencv-contrib-python transforms3d
 
 ##############################################################################
 ##                                 Create User                              ##
@@ -45,9 +57,8 @@ RUN mkdir -p /home/$USER/ros2_ws/src
 ##############################################################################
 ##                                 User Dependecies                         ##
 ##############################################################################
-WORKDIR /home/$USER/ros2_ws/src
-# Only COPY build environment for developement. For final version use git clone as above.
-COPY . .
+WORKDIR /home/$USER/ros2_ws/source
+# COPY . ./ros2_aruco
 
 ##############################################################################
 ##                                 Build ROS and run                        ##
@@ -60,6 +71,5 @@ RUN sudo sed --in-place --expression \
     '$isource "/home/$USER/ros2_ws/install/setup.bash"' \
     /ros_entrypoint.sh
 
-
-CMD /bin/bash
-CMD ["ros2", "run", "ros2_aruco", "aruco_node"]
+CMD ["ros2", "launch", "ros2_aruco", "aruco.launch.py"]
+# CMD /bin/bash

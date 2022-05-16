@@ -35,17 +35,12 @@ import numpy as np
 import cv2
 from ros2_aruco import transformations
 
-
-from std_msgs.msg import UInt8
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseArray, Pose
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseArray, Pose, TransformStamped
 from ros2_aruco_interfaces.msg import ArucoMarkers
+from tf2_ros import TransformBroadcaster
 
-
-
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 class ArucoNode(rclpy.node.Node):
 
@@ -53,10 +48,10 @@ class ArucoNode(rclpy.node.Node):
         super().__init__('aruco_node')
 
         # Declare and read parameters
-        self.declare_parameter("marker_size", .21)
+        self.declare_parameter("marker_size", .0625)
         self.declare_parameter("aruco_dictionary_id", "DICT_5X5_250")
-        self.declare_parameter("image_topic", "/image")
-        self.declare_parameter("camera_info_topic", "/stereo/left/camera_info")
+        self.declare_parameter("image_topic", "/camera/image_raw")
+        self.declare_parameter("camera_info_topic", "/camera/camera_info")
         self.declare_parameter("camera_frame", None)
 
         self.marker_size = self.get_parameter("marker_size").get_parameter_value().double_value
@@ -82,28 +77,9 @@ class ArucoNode(rclpy.node.Node):
                                                  self.info_callback,
                                                  qos_profile_sensor_data)
 
-        # self.create_subscription(Image, image_topic,
-        #                          self.image_callback, qos_profile_sensor_data)
-
         self.create_subscription(Image, image_topic,
-                                 self.image_callback_single_tag, qos_profile_sensor_data)
-        
-        """ CUSTOM """
-        self.create_subscription(UInt8, 
-                                "id_to_track",
-                                self.set_id_callback,
-                                qos_profile_sensor_data)
+                                 self.image_callback, qos_profile_sensor_data)
 
-        self.id_to_track = 1
-        
-        qos_profile = QoSProfile(
-            reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
-            history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST,
-            depth=1
-        )
-
-        self.pose_pub = self.create_publisher(PoseStamped, "/camera/patient_pose", qos_profile=qos_profile)
-        """"""
         # Set up publishers
         self.poses_pub = self.create_publisher(PoseArray, 'aruco_poses', 10)
         self.markers_pub = self.create_publisher(ArucoMarkers, 'aruco_markers', 10)
@@ -117,66 +93,15 @@ class ArucoNode(rclpy.node.Node):
         self.aruco_parameters = cv2.aruco.DetectorParameters_create()
         self.bridge = CvBridge()
 
+        # Initialize the transform broadcaster
+        self.tf_broadcaster = TransformBroadcaster(self)
+
     def info_callback(self, info_msg):
         self.info_msg = info_msg
         self.intrinsic_mat = np.reshape(np.array(self.info_msg.k), (3, 3))
         self.distortion = np.array(self.info_msg.d)
         # Assume that camera parameters will remain the same...
         self.destroy_subscription(self.info_sub)
-
-    def set_id_callback(self, id_msg):
-        self.id_to_track = id_msg
-
-    def image_callback_single_tag(self, img_msg):
-        if self.info_msg is None:
-            self.get_logger().warn("No camera info has been received!")
-            return
-
-        if self.id_to_track is None:
-            self.get_logger().warn("No Aruco ID set to track!")
-            return
-        
-        cv_image = self.bridge.imgmsg_to_cv2(img_msg,
-                                             desired_encoding='mono8')
-        # markers = ArucoMarkers()
-        tag_pose = PoseStamped()
-        
-        tag_pose.header.stamp = self.get_clock().now().to_msg()
-        tag_pose.header.frame_id = "camera"
-
-        corners, marker_ids, rejected = cv2.aruco.detectMarkers(cv_image,
-                                                                self.aruco_dictionary,
-                                                                parameters=self.aruco_parameters)
-        if marker_ids is not None:
-
-            if cv2.__version__ > '4.0.0':
-                rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners,
-                                                                      self.marker_size, self.intrinsic_mat,
-                                                                      self.distortion)
-            else:
-                rvecs, tvecs = cv2.aruco.estimatePoseSingleMarkers(corners,
-                                                                   self.marker_size, self.intrinsic_mat,
-                                                                   self.distortion)
-            for i, marker_id in enumerate(marker_ids):
-                print("Marker detected")
-                if marker_id == self.id_to_track:
-                    tag_pose.pose.position.x = tvecs[i][0][0]
-                    tag_pose.pose.position.y = tvecs[i][0][1]
-                    tag_pose.pose.position.z = tvecs[i][0][2]
-
-                    rot_matrix = np.eye(4)
-                    rot_matrix[0:3, 0:3] = cv2.Rodrigues(np.array(rvecs[i][0]))[0]
-                    quat = transformations.quaternion_from_matrix(rot_matrix)
-
-                    tag_pose.pose.orientation.x = quat[0]
-                    tag_pose.pose.orientation.y = quat[1]
-                    tag_pose.pose.orientation.z = quat[2]
-                    tag_pose.pose.orientation.w = quat[3]
-                    print(tag_pose)
-		     
-		 
-            self.pose_pub.publish(tag_pose)
-
 
     def image_callback(self, img_msg):
 
@@ -194,8 +119,7 @@ class ArucoNode(rclpy.node.Node):
         else:
             markers.header.frame_id = self.camera_frame
             pose_array.header.frame_id = self.camera_frame
-            
-            
+
         markers.header.stamp = img_msg.header.stamp
         pose_array.header.stamp = img_msg.header.stamp
 
@@ -231,6 +155,20 @@ class ArucoNode(rclpy.node.Node):
                 markers.poses.append(pose)
                 markers.marker_ids.append(marker_id[0])
 
+                t = TransformStamped()
+                t.header.stamp = self.get_clock().now().to_msg()
+                t.header.frame_id = 'camera'
+                t.child_frame_id = "marker_" + str(marker_id[0])
+                t.transform.translation.x = tvecs[i][0][0]
+                t.transform.translation.y = tvecs[i][0][1]
+                t.transform.translation.z = tvecs[i][0][2]
+                t.transform.rotation.x = quat[0]
+                t.transform.rotation.y = quat[1]
+                t.transform.rotation.z = quat[2]
+                t.transform.rotation.w = quat[3]
+
+                self.tf_broadcaster.sendTransform(t)
+
             self.poses_pub.publish(pose_array)
             self.markers_pub.publish(markers)
 
@@ -238,7 +176,11 @@ class ArucoNode(rclpy.node.Node):
 def main():
     rclpy.init()
     node = ArucoNode()
-    rclpy.spin(node)
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        node.get_logger().info("KeyboardInterrupt")
 
     node.destroy_node()
     rclpy.shutdown()
