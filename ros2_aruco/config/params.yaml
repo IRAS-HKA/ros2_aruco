@@ -5,3 +5,4 @@ aruco_node:
     image_topic: "/camera/color/image_raw"
     camera_info_topic: "/camera/color/camera_info"
     camera_frame: "camera"
+    filter_ids: [5] # If list is empty, all IDs will be published

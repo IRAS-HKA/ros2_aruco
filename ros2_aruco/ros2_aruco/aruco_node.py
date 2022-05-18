@@ -53,6 +53,7 @@ class ArucoNode(rclpy.node.Node):
         self.declare_parameter("image_topic", "/camera/image_raw")
         self.declare_parameter("camera_info_topic", "/camera/camera_info")
         self.declare_parameter("camera_frame", None)
+        self.declare_parameter("filter_ids", [])
 
         self.marker_size = self.get_parameter("marker_size").get_parameter_value().double_value
         dictionary_id_name = self.get_parameter(
@@ -60,6 +61,7 @@ class ArucoNode(rclpy.node.Node):
         image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
         info_topic = self.get_parameter("camera_info_topic").get_parameter_value().string_value
         self.camera_frame = self.get_parameter("camera_frame").get_parameter_value().string_value
+        self.filter_ids = self.get_parameter("filter_ids").get_parameter_value().integer_array_value
 
         # Make sure we have a valid dictionary id:
         try:
@@ -137,6 +139,10 @@ class ArucoNode(rclpy.node.Node):
                                                                    self.marker_size, self.intrinsic_mat,
                                                                    self.distortion)
             for i, marker_id in enumerate(marker_ids):
+                if len(self.filter_ids) > 0:
+                    if marker_id not in self.filter_ids:
+                        continue
+
                 pose = Pose()
                 pose.position.x = tvecs[i][0][0]
                 pose.position.y = tvecs[i][0][1]
@@ -169,8 +175,9 @@ class ArucoNode(rclpy.node.Node):
 
                 self.tf_broadcaster.sendTransform(t)
 
-            self.poses_pub.publish(pose_array)
-            self.markers_pub.publish(markers)
+            if not len(pose_array.poses) == 0:
+                self.poses_pub.publish(pose_array)
+                self.markers_pub.publish(markers)
 
 
 def main():
