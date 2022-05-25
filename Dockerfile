@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # New versions necessary to prevent "skbuild" error from scikit-build
-RUN python3 -m pip install -U pip setuptools
+# RUN python3 -m pip install -U pip setuptools
 RUN pip3 install opencv-contrib-python transforms3d
 
 ##############################################################################
@@ -50,6 +50,10 @@ RUN groupadd -g "$GID" "$USER"  && \
     echo "$USER:$PASSWORD" | chpasswd && \
     echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/sudogrp
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /etc/bash.bashrc
+
+COPY dds_profile.xml /home/$USER
+RUN chown $USER:$USER /home/$USER/dds_profile.xml
+ENV FASTRTPS_DEFAULT_PROFILES_FILE=/home/$USER/dds_profile.xml
 
 USER $USER 
 RUN mkdir -p /home/$USER/ros2_ws/src
@@ -71,5 +75,6 @@ RUN sudo sed --in-place --expression \
     '$isource "/home/$USER/ros2_ws/install/setup.bash"' \
     /ros_entrypoint.sh
 
-CMD ["ros2", "launch", "ros2_aruco", "aruco.launch.py"]
 # CMD /bin/bash
+CMD ["ros2", "launch", "ros2_aruco", "aruco.launch.py"]
+
