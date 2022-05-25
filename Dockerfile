@@ -57,8 +57,8 @@ RUN mkdir -p /home/$USER/ros2_ws/src
 ##############################################################################
 ##                                 User Dependecies                         ##
 ##############################################################################
-WORKDIR /home/$USER/ros2_ws/source
-# COPY . ./ros2_aruco
+WORKDIR /home/$USER/ros2_ws/src
+COPY . ./ros2_aruco
 
 ##############################################################################
 ##                                 Build ROS and run                        ##
