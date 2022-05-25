@@ -83,8 +83,8 @@ class ArucoNode(rclpy.node.Node):
                                  self.image_callback, qos_profile_sensor_data)
 
         # Set up publishers
-        self.poses_pub = self.create_publisher(PoseArray, 'aruco_poses', 10)
-        self.markers_pub = self.create_publisher(ArucoMarkers, 'aruco_markers', 10)
+        self.poses_pub = self.create_publisher(PoseArray, 'aruco_poses', qos_profile_sensor_data)
+        self.markers_pub = self.create_publisher(ArucoMarkers, 'aruco_markers', qos_profile_sensor_data)
 
         # Set up fields for camera parameters
         self.info_msg = None
