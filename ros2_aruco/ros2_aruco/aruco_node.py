@@ -48,7 +48,7 @@ class ArucoNode(rclpy.node.Node):
         super().__init__('aruco_node')
 
         # Declare and read parameters
-        self.declare_parameter("marker_size", .0625)
+        self.declare_parameter("marker_size", 0.1435)
         self.declare_parameter("aruco_dictionary_id", "DICT_5X5_250")
         self.declare_parameter("image_topic", "/camera/image_raw")
         self.declare_parameter("camera_info_topic", "/camera/camera_info")
@@ -130,6 +130,8 @@ class ArucoNode(rclpy.node.Node):
                                                                 parameters=self.aruco_parameters)
         if marker_ids is not None:
 
+            self.get_logger().info(f"marker_size: {self.marker_size}")
+            
             if cv2.__version__ > '4.0.0':
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners,
                                                                       self.marker_size, self.intrinsic_mat,
