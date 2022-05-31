@@ -148,10 +148,7 @@ class ArucoNode(rclpy.node.Node):
         corners, marker_ids, rejected = cv2.aruco.detectMarkers(cv_image,
                                                                 self.aruco_dictionary,
                                                                 parameters=self.aruco_parameters)
-        if marker_ids is not None:
-
-            self.get_logger().info(f"marker_size: {self.marker_size}")
-            
+        if marker_ids is not None:            
             if cv2.__version__ > '4.0.0':
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners,
                                                                       self.marker_size, self.intrinsic_mat,
