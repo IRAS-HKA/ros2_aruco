@@ -41,6 +41,10 @@ from geometry_msgs.msg import PoseArray, Pose, TransformStamped
 from ros2_aruco_interfaces.msg import ArucoMarkers
 from tf2_ros import TransformBroadcaster
 
+# costume import for getParams marker_size
+from rcl_interfaces.srv import GetParameters
+from ros2_aruco_interfaces.srv import UpdateParams
+
 
 class ArucoNode(rclpy.node.Node):
 
@@ -48,7 +52,7 @@ class ArucoNode(rclpy.node.Node):
         super().__init__('aruco_node')
 
         # Declare and read parameters
-        self.declare_parameter("marker_size", .0625)
+        self.declare_parameter("marker_size", 0.1435)
         self.declare_parameter("aruco_dictionary_id", "DICT_5X5_250")
         self.declare_parameter("image_topic", "/camera/image_raw")
         self.declare_parameter("camera_info_topic", "/camera/camera_info")
@@ -86,6 +90,21 @@ class ArucoNode(rclpy.node.Node):
         self.poses_pub = self.create_publisher(PoseArray, 'aruco_poses', qos_profile_sensor_data)
         self.markers_pub = self.create_publisher(ArucoMarkers, 'aruco_markers', qos_profile_sensor_data)
 
+        self.request = GetParameters.Request()
+        self.request.names = ['marker_size']
+
+        # Client and Service for getParams marker_size
+
+        self.srv = self.create_service(UpdateParams,
+                                       'update_params',
+                                       self.update_params_callback)
+
+        self.client = self.create_client(GetParameters,
+                                         '/aruco_node/get_parameters')
+
+        self.request = GetParameters.Request()
+        self.request.names = ['marker_size']
+
         # Set up fields for camera parameters
         self.info_msg = None
         self.intrinsic_mat = None
@@ -97,6 +116,7 @@ class ArucoNode(rclpy.node.Node):
 
         # Initialize the transform broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
+
 
     def info_callback(self, info_msg):
         self.info_msg = info_msg
@@ -128,8 +148,7 @@ class ArucoNode(rclpy.node.Node):
         corners, marker_ids, rejected = cv2.aruco.detectMarkers(cv_image,
                                                                 self.aruco_dictionary,
                                                                 parameters=self.aruco_parameters)
-        if marker_ids is not None:
-
+        if marker_ids is not None:            
             if cv2.__version__ > '4.0.0':
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners,
                                                                       self.marker_size, self.intrinsic_mat,
@@ -179,6 +198,26 @@ class ArucoNode(rclpy.node.Node):
             if not len(pose_array.poses) == 0:
                 self.poses_pub.publish(pose_array)
                 self.markers_pub.publish(markers)
+
+    def update_params_callback(self, request, response):
+        if request.update:
+            self.client.wait_for_service()
+            future = self.client.call_async(self.request)
+            future.add_done_callback(self.callback_global_param)
+            response.done = True
+            return response
+        else:
+            response.done = False
+            return response
+
+    def callback_global_param(self, future):
+        try:
+            result = future.result()
+        except Exception as e:
+            self.get_logger().warn("service call failed %r" % (e,))
+        else:
+            param = result.values[0]
+            self.get_logger().info("Got global param: %s" % (param.double_value,))
 
 
 def main():
