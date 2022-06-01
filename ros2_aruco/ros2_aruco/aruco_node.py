@@ -162,7 +162,8 @@ class ArucoNode(rclpy.node.Node):
                 markers.marker_ids.append(marker_id[0])
 
                 t = TransformStamped()
-                t.header.stamp = self.get_clock().now().to_msg()
+                # t.header.stamp = self.get_clock().now().to_msg()
+                t.header.stamp = img_msg.header.stamp
                 t.header.frame_id = 'camera'
                 t.child_frame_id = "marker_" + str(marker_id[0])
                 t.transform.translation.x = tvecs[i][0][0]
