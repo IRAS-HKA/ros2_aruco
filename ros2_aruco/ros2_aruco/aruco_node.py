@@ -46,6 +46,8 @@ from rcl_interfaces.srv import GetParameters
 from ros2_aruco_interfaces.srv import UpdateParams
 
 
+from rcl_interfaces.msg import SetParametersResult
+
 class ArucoNode(rclpy.node.Node):
 
     def __init__(self):
@@ -102,8 +104,10 @@ class ArucoNode(rclpy.node.Node):
         self.client = self.create_client(GetParameters,
                                          '/aruco_node/get_parameters')
 
-        self.request = GetParameters.Request()
-        self.request.names = ['marker_size']
+        self.add_on_set_parameters_callback(self.parameters_callback)
+
+        # self.request = GetParameters.Request()
+        # self.request.names = ['marker_size']
 
         # Set up fields for camera parameters
         self.info_msg = None
@@ -117,6 +121,13 @@ class ArucoNode(rclpy.node.Node):
         # Initialize the transform broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
 
+    def parameters_callback(self, params):
+        for param in params:
+            if param and param.name == "filter_ids":
+                self.filter_ids = param.value
+            if param and param.name == "marker_size":
+                self.marker_size = param.value
+        return SetParametersResult(successful=True)
 
     def info_callback(self, info_msg):
         self.info_msg = info_msg
@@ -145,9 +156,32 @@ class ArucoNode(rclpy.node.Node):
         markers.header.stamp = img_msg.header.stamp
         pose_array.header.stamp = img_msg.header.stamp
 
+        # timeimage = markers.header.stamp
+        # timeimagesec = timeimage.sec
+        # timeimagenano = timeimage.nanosec
+        # if (len(str(timeimagenano)) != 9):
+        #     timeimagenano = str(0)+str(timeimagenano)
+        #
+        # timeimagecomp = float(str(timeimagesec) + "." + str(timeimagenano))
+        # timenode = self.get_clock().now().to_msg()
+        # timenodesec = timenode.sec
+        # timenodenano = timenode.nanosec
+        # if (len(str(timenodenano)) != 9):
+        #     timenodenano = str(0)+str(timenodenano)
+        #
+        # timenodecomp = float(str(timenodesec) + "." + str(timenodenano))
+        #
+        # diff = timenodecomp - timeimagecomp
+        # self.get_logger().info("image %r" % str(img_msg.header))
+        # self.get_logger().info("image %r" % str(timeimagenano))
+        # self.get_logger().info("node %r" % str(timenodenano))
+        # self.get_logger().info("diff %r" % str(diff))
+
+
         corners, marker_ids, rejected = cv2.aruco.detectMarkers(cv_image,
                                                                 self.aruco_dictionary,
                                                                 parameters=self.aruco_parameters)
+
         if marker_ids is not None:            
             if cv2.__version__ > '4.0.0':
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners,
@@ -161,6 +195,8 @@ class ArucoNode(rclpy.node.Node):
                 if len(self.filter_ids) > 0:
                     if marker_id not in self.filter_ids:
                         continue
+
+
 
                 pose = Pose()
                 pose.position.x = tvecs[i][0][0]
@@ -218,6 +254,7 @@ class ArucoNode(rclpy.node.Node):
         else:
             param = result.values[0]
             self.get_logger().info("Got global param: %s" % (param.double_value,))
+            self.get_logger().info("Got global param2: %s" % (result.values,))
 
 
 def main():
