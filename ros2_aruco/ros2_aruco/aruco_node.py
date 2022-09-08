@@ -37,7 +37,7 @@ from ros2_aruco import transformations
 
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseArray, Pose, TransformStamped
+from geometry_msgs.msg import PoseArray, Pose, TransformStamped, Point
 from ros2_aruco_interfaces.msg import ArucoMarkers
 from tf2_ros import TransformBroadcaster
 
@@ -47,6 +47,7 @@ from ros2_aruco_interfaces.srv import UpdateParams
 
 
 from rcl_interfaces.msg import SetParametersResult
+
 
 class ArucoNode(rclpy.node.Node):
 
@@ -177,12 +178,11 @@ class ArucoNode(rclpy.node.Node):
         # self.get_logger().info("node %r" % str(timenodenano))
         # self.get_logger().info("diff %r" % str(diff))
 
-
         corners, marker_ids, rejected = cv2.aruco.detectMarkers(cv_image,
                                                                 self.aruco_dictionary,
                                                                 parameters=self.aruco_parameters)
 
-        if marker_ids is not None:            
+        if marker_ids is not None:
             if cv2.__version__ > '4.0.0':
                 rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners,
                                                                       self.marker_size, self.intrinsic_mat,
@@ -191,12 +191,11 @@ class ArucoNode(rclpy.node.Node):
                 rvecs, tvecs = cv2.aruco.estimatePoseSingleMarkers(corners,
                                                                    self.marker_size, self.intrinsic_mat,
                                                                    self.distortion)
+
             for i, marker_id in enumerate(marker_ids):
                 if len(self.filter_ids) > 0:
                     if marker_id not in self.filter_ids:
                         continue
-
-
 
                 pose = Pose()
                 pose.position.x = tvecs[i][0][0]
@@ -230,6 +229,13 @@ class ArucoNode(rclpy.node.Node):
                 t.transform.rotation.w = quat[3]
 
                 self.tf_broadcaster.sendTransform(t)
+
+            for corner in corners[0]:
+                p = Point()
+                p.x = round(sum([row[0] for row in corner]) / 4)  # center x
+                p.y = round(sum([row[1] for row in corner]) / 4)  # center y
+                p.z = 0.0
+                markers.pixel_centers.append(p)
 
             if not len(pose_array.poses) == 0:
                 self.poses_pub.publish(pose_array)
