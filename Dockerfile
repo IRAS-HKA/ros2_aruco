@@ -29,9 +29,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-$ROS_DISTRO-tf-transformations \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# New versions necessary to prevent "skbuild" error from scikit-build
-# RUN python3 -m pip install -U pip setuptools
-RUN pip3 install opencv-contrib-python transforms3d
+RUN pip3 install \
+    opencv-contrib-python==4.6.0.66 \
+    transforms3d
 
 ##############################################################################
 ##                                 Create User                              ##
