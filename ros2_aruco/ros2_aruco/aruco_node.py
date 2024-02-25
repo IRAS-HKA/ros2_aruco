@@ -60,7 +60,7 @@ class ArucoNode(rclpy.node.Node):
         self.declare_parameter("image_topic", "/camera/image_raw")
         self.declare_parameter("camera_info_topic", "/camera/camera_info")
         self.declare_parameter("camera_frame", None)
-        self.declare_parameter("filter_ids", [])
+        #self.declare_parameter("filter_ids", [])
 
         self.marker_size = self.get_parameter("marker_size").get_parameter_value().double_value
         dictionary_id_name = self.get_parameter(
@@ -68,7 +68,6 @@ class ArucoNode(rclpy.node.Node):
         image_topic = self.get_parameter("image_topic").get_parameter_value().string_value
         info_topic = self.get_parameter("camera_info_topic").get_parameter_value().string_value
         self.camera_frame = self.get_parameter("camera_frame").get_parameter_value().string_value
-        self.filter_ids = self.get_parameter("filter_ids").get_parameter_value().integer_array_value
 
         # Make sure we have a valid dictionary id:
         try:
@@ -124,8 +123,6 @@ class ArucoNode(rclpy.node.Node):
 
     def parameters_callback(self, params):
         for param in params:
-            if param and param.name == "filter_ids":
-                self.filter_ids = param.value
             if param and param.name == "marker_size":
                 self.marker_size = param.value
         return SetParametersResult(successful=True)
@@ -193,10 +190,7 @@ class ArucoNode(rclpy.node.Node):
                                                                    self.distortion)
 
             for i, marker_id in enumerate(marker_ids):
-                if len(self.filter_ids) > 0:
-                    if marker_id not in self.filter_ids:
-                        continue
-
+          
                 pose = Pose()
                 pose.position.x = tvecs[i][0][0]
                 pose.position.y = tvecs[i][0][1]
@@ -232,8 +226,8 @@ class ArucoNode(rclpy.node.Node):
 
             for corner in corners[0]:
                 p = Point()
-                p.x = round(sum([row[0] for row in corner]) / 4)  # center x
-                p.y = round(sum([row[1] for row in corner]) / 4)  # center y
+                p.x = float(round(sum([row[0] for row in corner]) / 4))  # center x
+                p.y = float(round(sum([row[1] for row in corner]) / 4)) # center y
                 p.z = 0.0
                 markers.pixel_centers.append(p)
 
